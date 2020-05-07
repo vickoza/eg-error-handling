@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/// @file An example of a real-time safety-critical error strategy.
+/// @note Please read accompanying comments for explanations...
 
 #include "acme/socket.h"
 #include "acme/common.h"
@@ -33,36 +35,49 @@
 namespace {
   using namespace std::string_literals;
 
+  /// @brief configuration information passed to the program at startup
   struct config {
     in_port_t port_number;
   };
 
   enum class animal { chicken, cow, horse, zebra };
 
+  /// @brief network message passed to the program at run time
   struct message {
     animal a;
   };
 
+  /// @brief parse command line and return valid program configuration
+  /// @param program arguments as passed to main
+  /// @return verified configuration information iff arguments satisfy program requirements
   auto parse_command_line(std::span<char const* const> args)
   {
+    // Verify that the correct number of arguments was passed to the program.
     constexpr auto expected_size = 1;
     if (auto actual_size = args.size() - 1; actual_size != expected_size) {
+      // tip: This is a user error which should be entirely avoidable so long as whoever is running the program receives
+      // adequate diagnostic information.
       acme::error("expected {} command-line parameters; got {}", expected_size, actual_size);
       return std::optional<config>{};
     }
 
+    // Verify that the program argument was a port number.
     auto const* port_string = args[1];
     auto const* port_string_end = std::strchr(port_string, '\0');
     in_port_t port_number;
     if (auto [p, ec] = std::from_chars(port_string, port_string_end, port_number);
         ec != std::errc() || p != port_string_end) {
+      // tip: This is a user error which should be entirely avoidable so long as whoever is running the program receives
+      // adequate diagnostic information.
       acme::error("failed to parse '{}' as port number.", port_string);
       return std::optional<config>{};
     }
 
+    // tip: The function has verified the program arguments and can now return valid configuration information.
     return std::make_optional(config{port_number});
   }
 
+  /// @brief converts raw network data into
   template <typename Destination>
   auto deserialize(std::span<std::byte> const bytes)
   {
